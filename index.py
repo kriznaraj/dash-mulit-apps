@@ -6,6 +6,9 @@ from dash.dependencies import Input, Output
 # Connect to main app.py file
 from app import app
 
+# import server from app.
+from app import server
+
 # Connect to your app pages
 from apps import test_app3, test_app2, churn_report
 
