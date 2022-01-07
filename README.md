@@ -1,4 +1,4 @@
-# dash-mulit-app
+# Telescope Dash App
 
 ```
 pip install -r requirements.txt
