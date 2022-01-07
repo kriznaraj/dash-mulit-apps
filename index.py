@@ -6,7 +6,7 @@ from dash.dependencies import Input, Output
 # Connect to main app.py file
 from app import app
 
-# import server from app.
+# import server from app. Important. Do not remove.
 from app import server
 
 # Connect to your app pages
@@ -17,9 +17,8 @@ app.layout = html.Div([
     dbc.Nav(
         [
             dbc.NavLink("Churn Report", active=True, href="/apps/churn_report"),
-            dbc.NavLink("A Test Link", href="/apps/test_app2"),
-            dbc.NavLink("Another Link", href="/apps/test_app3"),
-            dbc.NavLink("Disabled Link", disabled=True, href="#"),
+            dbc.NavLink("A Test Link", disabled=True, href="/apps/test_app2"),
+            dbc.NavLink("Another Link", disabled=True, href="/apps/test_app3"),
         ]
     ),
     html.Div(id='page-content', children=[])
