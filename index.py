@@ -1,21 +1,24 @@
-import dash_core_components as dcc
-import dash_html_components as html
+from dash import dcc
+from dash import html
+import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output
 
 # Connect to main app.py file
 from app import app
-from app import server
 
 # Connect to your app pages
-from apps import vgames, global_sales
-
+from apps import test_app3, test_app2, churn_report
 
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
-    html.Div([
-        dcc.Link('Video Games|', href='/apps/vgames'),
-        dcc.Link('Other Products', href='/apps/global_sales'),
-    ], className="row"),
+    dbc.Nav(
+        [
+            dbc.NavLink("Churn Report", active=True, href="/apps/churn_report"),
+            dbc.NavLink("A Test Link", href="/apps/test_app2"),
+            dbc.NavLink("Another Link", href="/apps/test_app3"),
+            dbc.NavLink("Disabled Link", disabled=True, href="#"),
+        ]
+    ),
     html.Div(id='page-content', children=[])
 ])
 
@@ -23,13 +26,15 @@ app.layout = html.Div([
 @app.callback(Output('page-content', 'children'),
               [Input('url', 'pathname')])
 def display_page(pathname):
-    if pathname == '/apps/vgames':
-        return vgames.layout
-    if pathname == '/apps/global_sales':
-        return global_sales.layout
+    if pathname == '/apps/churn_report':
+        return churn_report.layout
+    if pathname == '/apps/test_app2':
+        return test_app2.layout
+    if pathname == '/apps/test_app3':
+        return test_app3.layout
     else:
-        return "404 Page Error! Please choose a link"
+        return churn_report.layout
 
 
 if __name__ == '__main__':
-    app.run_server(debug=False)
+    app.run_server(debug=True)

@@ -1,34 +1,15 @@
-import dash_core_components as dcc
-import dash_html_components as html
+from dash import dcc
+from dash import html
 from dash.dependencies import Input, Output
 import plotly.express as px
 import pandas as pd
-import pathlib
-import re
 from app import app
-
-
-# This function will convert the url to a download link
-def convert_gsheets_url(u):
-    try:
-        worksheet_id = u.split("#gid=")[1]
-    except:
-        # Couldn't get worksheet id. Ignore it
-        worksheet_id = None
-    u = re.findall("https://docs.google.com/spreadsheets/d/.*?/", u)[0]
-    u += "export"
-    u += "?format=csv"
-    if worksheet_id:
-        u += "&gid={}".format(worksheet_id)
-    return u
-
+from app import convert_gsheets_url
 
 dfv = pd.read_csv(convert_gsheets_url(
     "https://docs.google.com/spreadsheets/d/1xodyyLyfhsS03KJLXvpIXZ9CgD3BjKLcqagztQD4imo/edit"
 ))  # GregorySmith Kaggle
 sales_list = ["North American Sales", "EU Sales", "Japan Sales", "Other Sales", "World Sales"]
-
-print(dfv)
 
 layout = html.Div([
     html.H1('Video Games Sales', style={"textAlign": "center"}),
