@@ -6,6 +6,7 @@ import dash
 import plotly.express as px
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output
+import plotly.graph_objects as go
 
 from app import app
 from app import convert_gsheets_url
@@ -119,8 +120,8 @@ tpvQoQColumnStyleGreen = [{
 
 tpvColumnStyle = tpvColumnStyle + tpvQoQColumnStyleRed + tpvQoQColumnStyleGreen
 
-tpvColFilterOptions = ['Default', 'Show All', 'Only QoQ Growth']
-tpvDataFilterOptions = ['Show All', 'Only Red', 'Only Green']
+tpvColFilterOptions = ['Default', 'Only QoQ Growth', 'Show All']
+tpvDataFilterOptions = ['Only Red', 'Only Green', 'Show All']
 
 layout = html.Div([
     # header
@@ -133,6 +134,11 @@ layout = html.Div([
     html.Div([
         html.Label('Early Warning Dashboard', style={"align": "left"}),
         html.Div([
+            dcc.Graph(id="tpv-pie-chart",
+                      figure=go.Figure(data=[go.Pie(labels=['Neutral', 'Churn', 'Pipeline'],
+                                                    values=[sum(p['color'] == 'N' for p in tpvValues),
+                                                            sum(p['color'] == 'R' for p in tpvValues),
+                                                            sum(p['color'] == 'G' for p in tpvValues)])])),
             dbc.Row([
                 dbc.Col(html.Div(dcc.Dropdown(
                     id='tpv-col-filter', value=tpvColFilterOptions[0], clearable=False,
