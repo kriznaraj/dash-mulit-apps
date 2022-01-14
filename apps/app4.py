@@ -17,7 +17,7 @@ st = pd.read_csv(filepath)
 features = st.columns[1:-1]
 opts = [{'label': i, 'value': i} for i in features]
 
-print(opts)
+# print(opts)
 
 # range slider options
 st['Date'] = pd.to_datetime(st.Date)
@@ -77,7 +77,7 @@ layout = html.Div([
               [Input('opt', 'value'),
                Input('slider', 'value')])
 def update_figure(input1, input2):
-    print(input1, input2)
+    # print(input1, input2)
     # filtering the data
     st2 = st[(st.Date > dates[input2[0]]) & (st.Date < dates[input2[1]])]
     # updating the plot

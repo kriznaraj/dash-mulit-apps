@@ -17,9 +17,9 @@ app.layout = html.Div([
     dbc.Nav(
         [
             dbc.NavLink("Churn Report", active=True, href="/apps/churn_report"),
-            dbc.NavLink("A Test Link", disabled=True, href="/apps/test_app2"),
-            dbc.NavLink("Another Link", disabled=True, href="/apps/test_app3"),
-            dbc.NavLink("App 4", disabled=False, href="/apps/app4"),
+            # dbc.NavLink("A Test Link", disabled=True, href="/apps/test_app2"),
+            # dbc.NavLink("Another Link", disabled=True, href="/apps/test_app3"),
+            # dbc.NavLink("App 4", disabled=False, href="/apps/app4"),
         ], style={"background": "#ff7846"}
     ),
     html.Div(id='page-content', children=[])

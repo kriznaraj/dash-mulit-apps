@@ -1,11 +1,11 @@
-from dash import dcc, State
+from dash import dcc
 from dash import html
 from dash import dash_table
 import pandas as pd
 import dash
 import plotly.express as px
+import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output
-from dash.exceptions import PreventUpdate
 
 from app import app
 from app import convert_gsheets_url
@@ -65,31 +65,29 @@ def add_month_on_month(tpv_map, ms):
                         red = 0
                 except ValueError:
                     p = 0
+                    # grn = 0
+                    # red = 0
                 except KeyError:
                     p = 0
+                    # grn = 0
+                    # red = 0
                 r["Growth in " + str(item)] = p
                 r['color'] = 'G' if grn >= 2 else ('R' if red >= 2 else 'N')
     return tpv_map
 
 
 months = dfv.month.unique()
-# months = ['August', 'September', 'October', 'November', 'December', 'January']
 months = sorted(months, key=lambda x: months_dict[x.split()[0]])
 domains = sorted(dfv.domain.unique())
 tpvMap = transform_df(dfv.to_dict('records'))
 tpvMap = add_customer_meta(tpvMap, df2.to_dict('records'))
 tpvMap = add_month_on_month(tpvMap, months)
 tpvValues = list(tpvMap.values())
-# print(dfv.to_dict('records'))
-# print(tpvValues)
 monthColumn = [{"name": i, "id": i, "type": "numeric"} for i in months]
 domainColumn = [{"name": 'Domain', "id": 'domain', "type": "text"}]
 merchantInfoColum = [{"name": 'Merchant Id', "id": 'Merchant Id', "type": "text"},
                      {"name": 'Contract Value', "id": 'Contract Value', "type": "numeric"}]
 qoqColumns = [{"name": 'Growth in ' + str(i), "id": 'Growth in ' + str(i), "type": "numeric"} for i in months[1:-1]]
-# for i in range(1, len(months) - 1):
-#     tpvColumns.append({"name": 'Month ' + str(i), "id": 'Month ' + str(i), "type": "numeric"})
-# print(tpvColumns)
 tpvColumns = domainColumn + merchantInfoColum + monthColumn + qoqColumns
 
 # print(tpvColumns)
@@ -121,10 +119,13 @@ tpvQoQColumnStyleGreen = [{
 
 tpvColumnStyle = tpvColumnStyle + tpvQoQColumnStyleRed + tpvQoQColumnStyleGreen
 
+tpvColFilterOptions = ['Default', 'Show All', 'Only QoQ Growth']
+tpvDataFilterOptions = ['Show All', 'Only Red', 'Only Green']
+
 layout = html.Div([
     # header
     html.Div([
-        html.H1("Telescope, Magnify your customers growth!"),
+        html.H3("Telescope, Magnify your customers growth!"),
         html.P("Investigate, Analyse & Predict")
     ], style={'padding': '0.5%', 'background': 'rgb(239 204 192)'}),
 
@@ -132,12 +133,18 @@ layout = html.Div([
     html.Div([
         html.Label('Early Warning Dashboard', style={"align": "left"}),
         html.Div([
-            html.Button('Show All', id='show-all'),
-            html.Button('Show only QoQ Growth', id='show-only-qoq'),
-            html.Button('Show only Red', id='show-only-red'),
-            html.Button('Show only Green', id='show-only-green'),
+            dbc.Row([
+                dbc.Col(html.Div(dcc.Dropdown(
+                    id='tpv-col-filter', value=tpvColFilterOptions[0], clearable=False,
+                    options=[{'label': x, 'value': x} for x in tpvColFilterOptions]
+                ))),
+                dbc.Col(html.Div(dcc.Dropdown(
+                    id='tpv-data-filter', value=tpvDataFilterOptions[0], clearable=False,
+                    options=[{'label': x, 'value': x} for x in tpvDataFilterOptions]
+                )))
+            ]),
             dash_table.DataTable(
-                id='tpv-tbl', data=tpvValues, columns=tpvColumns,
+                id='tpv-tbl', data=tpvValues[:10], columns=tpvColumns,
                 # filter_action='native',
                 column_selectable="single",
                 style_cell={
@@ -145,26 +152,19 @@ layout = html.Div([
                     'textOverflow': 'ellipsis',
                     'maxWidth': 0
                 },
-                tooltip_data=[
-                    {
-                        column: {'value': str(value), 'type': 'markdown'}
-                        for column, value in row.items()
-                    } for row in tpvValues
-                ],
                 style_table={'overflowX': 'auto'},
                 style_header={
                     'backgroundColor': 'rgb(210, 210, 210)',
                     'color': 'black',
                     'fontWeight': 'bold'
                 },
-                tooltip_duration=None,
                 style_data_conditional=tpvColumnStyle,
                 page_size=10,
                 page_current=0,
                 page_action='custom'
             ),
         ]),
-    ]),
+    ], style={'padding': '1%'}),
     # tpv trend by month
     html.Div([
         html.Label('TPV Trend by Month', style={"textAlign": "left"}),
@@ -175,15 +175,8 @@ layout = html.Div([
             )),
         ], className='row'),
         dcc.Graph(id='churn-bar', figure={}),
-    ]),
-    # client store
-    dcc.Store(id='intermediate-value',
-              data={'domainCol': domainColumn,
-                    'merchantInfoCol': merchantInfoColum,
-                    'monthCol': monthColumn,
-                    'qoqCol': qoqColumns})
-    # dbc.Alert(id='tbl_out'),
-], style={'padding': '0 1% 1% 1%'})
+    ], style={'padding': '1%'})
+])
 
 
 @app.callback(
@@ -200,46 +193,49 @@ def display_value(customer_chosen):
     return fig
 
 
-app.clientside_callback(
-    """
-    function(b1, b2, data) {
-        const triggered = dash_clientside.callback_context.triggered.map(t => t.prop_id);
-        console.log(triggered)
-        if(triggered.length == 0) {
-            return data.domainCol.concat(data.monthCol).concat(data.qoqCol);
-        }
-        if(triggered[0].startsWith('show-only-qoq')) {
-            return data.domainCol.concat(data.qoqCol);
-        }
-        if(triggered[0].startsWith('show-all')) {
-            return data.domainCol.concat(data.merchantInfoCol).concat(data.monthCol).concat(data.qoqCol);
-        }
-    }
-    """,
-    Output('tpv-tbl', 'columns'),
-    Input('show-all', 'n_clicks'),
-    Input('show-only-qoq', 'n_clicks'),
-    State('intermediate-value', 'data')
-)
-
-
 @app.callback(
     Output('tpv-tbl', 'data'),
     Input('tpv-tbl', "page_current"),
     Input('tpv-tbl', "page_size"),
-    Input('show-only-red', 'n_clicks'),
-    Input('show-only-green', 'n_clicks'),
-    Input('show-all', 'n_clicks'),
+    Input('tpv-data-filter', 'value')
 )
-def update_table(page_current, page_size, redBtn, greenBtn, showAllBtn):
+def update_table_data(page_current, page_size, data_filter):
     triggered = dash.callback_context.triggered[0]['prop_id'].split('.')[0]
-    print(triggered)
-    if triggered == 'show-only-red':
-        print('red')
-        # [y for x, y in tpvValues if x > 2]
-    elif triggered == 'show-only-green':
+    print(triggered, page_current, page_size, data_filter)
+    data = tpvValues
+    if data_filter == 'Show All':
+        print('all')
+        data = tpvValues
+    elif data_filter == 'Only Green':
+        grn = list(filter(lambda a: a['color'] == 'G', tpvValues))
+        print(grn)
         print('green')
-    elif triggered == 'show-all':
-        print('showing all')
-    print(tpvValues)
-    return tpvValues[page_current * page_size:(page_current + 1) * page_size]
+        data = grn
+    elif data_filter == 'Only Red':
+        grn = list(filter(lambda a: a['color'] == 'R', tpvValues))
+        print(grn)
+        print('green')
+        data = grn
+
+    print(data[page_current * page_size:(page_current + 1) * page_size])
+    return data[page_current * page_size:(page_current + 1) * page_size]
+
+
+@app.callback(
+    Output('tpv-tbl', 'columns'),
+    Input('tpv-col-filter', 'value'),
+)
+def update_table_column(col_filter):
+    triggered = dash.callback_context.triggered[0]['prop_id'].split('.')[0]
+    print(triggered, col_filter)
+    columns = tpvColumns
+
+    if col_filter == 'Show All':
+        columns = tpvColumns
+    elif col_filter == 'Only QoQ Growth':
+        columns = domainColumn + qoqColumns
+    elif col_filter == 'Default':
+        columns = domainColumn + monthColumn + qoqColumns
+
+    print(columns)
+    return columns
