@@ -10,7 +10,7 @@ from app import app
 from app import server
 
 # Connect to your app pages
-from apps import test_app3, test_app2, churn_report
+from apps import test_app3, test_app2, churn_report, app4
 
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
@@ -19,7 +19,8 @@ app.layout = html.Div([
             dbc.NavLink("Churn Report", active=True, href="/apps/churn_report"),
             dbc.NavLink("A Test Link", disabled=True, href="/apps/test_app2"),
             dbc.NavLink("Another Link", disabled=True, href="/apps/test_app3"),
-        ]
+            dbc.NavLink("App 4", disabled=False, href="/apps/app4"),
+        ], style={"background": "#ff7846"}
     ),
     html.Div(id='page-content', children=[])
 ])
@@ -34,9 +35,11 @@ def display_page(pathname):
         return test_app2.layout
     if pathname == '/apps/test_app3':
         return test_app3.layout
+    if pathname == '/apps/app4':
+        return app4.layout
     else:
         return churn_report.layout
 
 
 if __name__ == '__main__':
-    app.run_server(debug=False)
+    app.run_server(debug=True)
