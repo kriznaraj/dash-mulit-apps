@@ -235,8 +235,11 @@ layout = html.Div([
 )
 def display_value(customer_chosen):
     dfv_filtered = dfv[dfv['domain'] == customer_chosen]
-    fig = px.line(dfv_filtered, x='month', y='invoices.amount')
-    fig = fig.update_yaxes(tickprefix="$", ticksuffix="M")
+    print(dfv_filtered)
+    fig = px.bar(dfv_filtered, x='month', y='invoices.amount')
+    fig.update_layout(title='TPV Trend - ' + customer_chosen,
+                      xaxis_title='Month',
+                      yaxis_title='TPV Processed')
     return fig
 
 
