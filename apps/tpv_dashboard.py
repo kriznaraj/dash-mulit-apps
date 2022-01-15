@@ -1,12 +1,14 @@
+import random
+
+import dash
+import dash_bootstrap_components as dbc
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+from dash import dash_table
 from dash import dcc
 from dash import html
-from dash import dash_table
-import pandas as pd
-import dash
-import plotly.express as px
-import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output
-import plotly.graph_objects as go
 
 from app import app
 from app import convert_gsheets_url
@@ -73,8 +75,20 @@ def add_month_on_month(tpv_map, ms):
                     # grn = 0
                     # red = 0
                 r["Growth in " + str(item)] = p
-                r['color'] = 'G' if grn >= 2 else ('R' if red >= 2 else 'N')
+                r['color'] = 'G' if grn >= 3 else ('R' if red >= 3 else 'N')
     return tpv_map
+
+
+def aggregate_tpv(records, ms):
+    agg = {}
+    for r in records:
+        for m in ms[:-1]:
+            mv = r[m] if m in r else 0
+            if m in agg:
+                agg[m] += mv
+            else:
+                agg[m] = mv
+    return agg
 
 
 months = dfv.month.unique()
@@ -120,8 +134,32 @@ tpvQoQColumnStyleGreen = [{
 
 tpvColumnStyle = tpvColumnStyle + tpvQoQColumnStyleRed + tpvQoQColumnStyleGreen
 
-tpvColFilterOptions = ['Default', 'Only QoQ Growth', 'Show All']
+tpvColFilterOptions = ['Only QoQ Growth', 'Default', 'Show All']
 tpvDataFilterOptions = ['Only Red', 'Only Green', 'Show All']
+
+
+def get_tpv_pie_chart():
+    labels = ['Neutral', 'Churn', 'Pipeline']
+    vals = [sum(p['color'] == 'N' for p in tpvValues),
+            sum(p['color'] == 'R' for p in tpvValues),
+            sum(p['color'] == 'G' for p in tpvValues)]
+    colors = ['lightcyan', 'red', 'green']
+    fig = go.Figure(data=go.Pie(labels=labels, values=vals, pull=[0, 0.05, 0.05]))
+    fig.update_traces(marker=dict(colors=colors))
+    fig.update_layout(title_text="Customer Churn & Pipeline")
+    return fig
+
+
+def get_agg_tpv_trend():
+    agg = aggregate_tpv(tpvValues, months)
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=list(agg.keys()), y=list(agg.values()),
+                             line=dict(color='firebrick', width=4)))
+    fig.update_layout(title='TPV Trend - All Customers',
+                      xaxis_title='Month',
+                      yaxis_title='TPV Processed')
+    return fig
+
 
 layout = html.Div([
     # header
@@ -132,14 +170,14 @@ layout = html.Div([
 
     # tpv table
     html.Div([
-        html.Label('Early Warning Dashboard', style={"align": "left"}),
         html.Div([
-            dcc.Graph(id="tpv-pie-chart",
-                      figure=go.Figure(data=[go.Pie(labels=['Neutral', 'Churn', 'Pipeline'],
-                                                    values=[sum(p['color'] == 'N' for p in tpvValues),
-                                                            sum(p['color'] == 'R' for p in tpvValues),
-                                                            sum(p['color'] == 'G' for p in tpvValues)])])),
             dbc.Row([
+                dbc.Col(html.Div(dcc.Graph(id="tpv-pie-chart", figure=get_tpv_pie_chart()))),
+                dbc.Col(html.Div(dcc.Graph(id='tpv-agg-trend', figure=get_agg_tpv_trend())))
+            ]),
+
+            dbc.Row([
+                dbc.Col([html.Label('TPV Details - All Customers')]),
                 dbc.Col(html.Div(dcc.Dropdown(
                     id='tpv-col-filter', value=tpvColFilterOptions[0], clearable=False,
                     options=[{'label': x, 'value': x} for x in tpvColFilterOptions]
@@ -149,38 +187,44 @@ layout = html.Div([
                     options=[{'label': x, 'value': x} for x in tpvDataFilterOptions]
                 )))
             ]),
-            dash_table.DataTable(
-                id='tpv-tbl', data=tpvValues[:10], columns=tpvColumns,
-                # filter_action='native',
-                column_selectable="single",
-                style_cell={
-                    'overflow': 'hidden',
-                    'textOverflow': 'ellipsis',
-                    'maxWidth': 0
-                },
-                style_table={'overflowX': 'auto'},
-                style_header={
-                    'backgroundColor': 'rgb(210, 210, 210)',
-                    'color': 'black',
-                    'fontWeight': 'bold'
-                },
-                style_data_conditional=tpvColumnStyle,
-                page_size=10,
-                page_current=0,
-                page_action='custom'
-            ),
+
+            dbc.Row([
+                dash_table.DataTable(
+                    id='tpv-tbl', data=tpvValues[:10], columns=tpvColumns,
+                    # filter_action='native',
+                    column_selectable="single",
+                    style_cell={
+                        'overflow': 'hidden',
+                        'textOverflow': 'ellipsis',
+                        'maxWidth': 0
+                    },
+                    style_table={'overflowX': 'auto'},
+                    style_header={
+                        'backgroundColor': 'rgb(210, 210, 210)',
+                        'color': 'black',
+                        'fontWeight': 'bold'
+                    },
+                    style_data_conditional=tpvColumnStyle,
+                    page_size=10,
+                    page_current=0,
+                    page_action='custom'
+                )
+            ]),
         ]),
     ], style={'padding': '1%'}),
+
     # tpv trend by month
     html.Div([
-        html.Label('TPV Trend by Month', style={"textAlign": "left"}),
-        html.Div([
+        dbc.Row([
+            dbc.Col([html.Label('TPV Trend by Month')]),
+        ]),
+        dbc.Row(dbc.Col(html.Div([
             html.Div(dcc.Dropdown(
-                id='customer-dropdown', value=domains[0], clearable=False,
+                id='customer-dropdown', value=random.choice(domains), clearable=False,
                 options=[{'label': x, 'value': x} for x in domains]
-            )),
-        ], className='row'),
-        dcc.Graph(id='churn-bar', figure={}),
+            ))
+        ]))),
+        dbc.Row([dcc.Graph(id='churn-bar', figure={})]),
     ], style={'padding': '1%'})
 ])
 
@@ -190,10 +234,7 @@ layout = html.Div([
     [Input(component_id='customer-dropdown', component_property='value')]
 )
 def display_value(customer_chosen):
-    # print(customer_chosen)
     dfv_filtered = dfv[dfv['domain'] == customer_chosen]
-    # print(dfv_filtered)
-    # fig = px.bar(dfv_filtered, x='month', y='invoices.amount')
     fig = px.line(dfv_filtered, x='month', y='invoices.amount')
     fig = fig.update_yaxes(tickprefix="$", ticksuffix="M")
     return fig
@@ -214,16 +255,13 @@ def update_table_data(page_current, page_size, data_filter):
         data = tpvValues
     elif data_filter == 'Only Green':
         grn = list(filter(lambda a: a['color'] == 'G', tpvValues))
-        print(grn)
         print('green')
         data = grn
     elif data_filter == 'Only Red':
         grn = list(filter(lambda a: a['color'] == 'R', tpvValues))
-        print(grn)
         print('green')
         data = grn
 
-    print(data[page_current * page_size:(page_current + 1) * page_size])
     return data[page_current * page_size:(page_current + 1) * page_size]
 
 
@@ -243,5 +281,4 @@ def update_table_column(col_filter):
     elif col_filter == 'Default':
         columns = domainColumn + monthColumn + qoqColumns
 
-    print(columns)
     return columns
