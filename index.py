@@ -10,7 +10,7 @@ from app import app
 from app import server
 
 # Connect to your app pages
-from apps import test_app3, test_app2, tpv_dashboard, app4
+from apps import test_app3, test_app2, tpv_dashboard, tickets_dashboard, app4
 
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
@@ -18,6 +18,7 @@ app.layout = html.Div([
         [
             dbc.NavLink("Home", active=True, href="/"),
             dbc.NavLink("TPV Dashboard", active=True, href="/apps/tpv_dashboard"),
+            dbc.NavLink("Tickets Dashboard", active=True, href="/apps/tickets_dashboard"),
             # dbc.NavLink("A Test Link", disabled=True, href="/apps/test_app2"),
             # dbc.NavLink("Another Link", disabled=True, href="/apps/test_app3"),
             # dbc.NavLink("App 4", disabled=False, href="/apps/app4"),
@@ -32,6 +33,8 @@ app.layout = html.Div([
 def display_page(pathname):
     if pathname == '/apps/tpv_dashboard':
         return tpv_dashboard.layout
+    if pathname == '/apps/tickets_dashboard':
+        return tickets_dashboard.layout
     if pathname == '/apps/test_app2':
         return test_app2.layout
     if pathname == '/apps/test_app3':
